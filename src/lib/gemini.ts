@@ -9,6 +9,11 @@ export const generateProblemStatements = async (
   existingProblems: Array<{ problem_title: string; problem_description: string }> = []
 ) => {
   try {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Gemini API key is not configured. Please check your environment variables.');
+    }
+
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Create context from existing problems

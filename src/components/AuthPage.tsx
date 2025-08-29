@@ -82,7 +82,19 @@ const AuthPage = ({ onAuthSuccess }: AuthPageProps) => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          toast({
+            title: "Account already exists",
+            description: "Please use the Login tab to sign in with your existing account.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        setIsLoading(false);
+        return;
+      }
       
       toast({
         title: "Welcome to the SLCIAN family! 🎉",
