@@ -164,18 +164,15 @@ const Dashboard = () => {
           }
         }
 
-        // Check if challenge is active for today (24 hours based on challenge_date in IST)
+        // Check if challenge is active for today
         const today = new Date();
-        const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-        const todayIST = new Date(today.getTime() + istOffset);
         const challengeDate = new Date(problem.challenge_date);
         
-        // Convert both dates to IST for comparison
-        const todayISTDateString = todayIST.toISOString().split('T')[0];
+        const todayDateString = today.toISOString().split('T')[0];
         const challengeDateString = challengeDate.toISOString().split('T')[0];
         
-        // Check if it's the same date in IST and is active
-        const isTodaysChallenge = todayISTDateString === challengeDateString && problem.is_active;
+        // Check if it's today's date and is active
+        const isTodaysChallenge = todayDateString === challengeDateString && problem.is_active;
         
         return {
           ...problem,
@@ -529,12 +526,10 @@ const Dashboard = () => {
               {challenges.filter(c => !c.isTodaysChallenge || !c.is_active).map((challenge) => {
                 // Determine if challenge is in past, future, or inactive today
                 const today = new Date();
-                const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-                const todayIST = new Date(today.getTime() + istOffset);
                 const challengeDate = new Date(challenge.challenge_date);
                 
-                const isPast = challengeDate < todayIST && !challenge.isTodaysChallenge;
-                const isFuture = challengeDate > todayIST;
+                const isPast = challengeDate < today && !challenge.isTodaysChallenge;
+                const isFuture = challengeDate > today;
                 
                 return (
                   <div 
@@ -549,8 +544,7 @@ const Dashboard = () => {
                           <Badge variant={isPast && challenge.isSubmitted ? "default" : "secondary"} className="font-mono">
                             {challengeDate.toLocaleDateString('en-IN', { 
                               day: '2-digit', 
-                              month: 'short',
-                              timeZone: 'Asia/Kolkata'
+                              month: 'short'
                             })}
                           </Badge>
                           <h3 className="font-semibold text-primary">{challenge.problem_title}</h3>

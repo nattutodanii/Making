@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ChevronRight, ChevronLeft, User, Code, Target, Terminal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import ProblemGenerationStatus from "./ProblemGenerationStatus";
+import { useProblemGeneration } from "@/hooks/useProblemGeneration";
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -16,6 +18,8 @@ interface OnboardingFlowProps {
 const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [showProblemGeneration, setShowProblemGeneration] = useState(false);
+  const { isGenerating, currentStep: generationStep, completedProblems, generateProblems } = useProblemGeneration();
   const [formData, setFormData] = useState({
     name: '',
     gender: '',
@@ -89,6 +93,14 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         description: "Welcome to the SIH preparation matrix, SLCIAN!",
       });
 
+      // Show problem generation status and start generation
+      setShowProblemGeneration(true);
+      setIsLoading(false);
+      
+      // Start problem generation in background
+      await generateProblems(user.data.user.id, skillsArray, formData.problemStatement);
+      
+      // Complete onboarding after generation
       onComplete();
     } catch (error: any) {
       toast({
@@ -96,11 +108,46 @@ const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         description: error.message,
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
+    } finally {
+      // Keep loading state until generation completes
     }
   };
 
+  // Show problem generation status if active
+  if (showProblemGeneration) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-card/20">
+        <div className="w-full max-w-2xl">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Terminal className="w-10 h-10 text-accent animate-pulse" />
+              <h1 className="text-4xl font-bold bg-gradient-cyber bg-clip-text text-transparent font-mono">SIH SLC</h1>
+            </div>
+            <p className="text-muted-foreground font-mono">AI is crafting your personalized challenge matrix...</p>
+          </div>
+          
+          <ProblemGenerationStatus
+            isGenerating={isGenerating}
+            currentStep={generationStep}
+            totalSteps={5}
+            completedProblems={completedProblems}
+          />
+          
+          {!isGenerating && completedProblems === 5 && (
+            <div className="text-center mt-6">
+              <p className="text-accent font-mono text-lg mb-2">
+                🚀 All systems ready!
+              </p>
+              <p className="text-muted-foreground font-mono text-sm">
+                Redirecting to your personalized dashboard...
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background via-background to-card/20">
       <div className="w-full max-w-2xl">
