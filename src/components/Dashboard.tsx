@@ -128,6 +128,9 @@ const Dashboard = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Update active challenge status first
+    await updateActiveChallengeStatusInDb(user.id);
+
     const { data: dayProblems } = await supabase
       .from('day_problems')
       .select('*')
@@ -146,7 +149,7 @@ const Dashboard = () => {
           .select('*')
           .eq('user_id', user.id)
           .eq('day_problem_id', problem.id)
-          .single();
+          .maybeSingle();
         
         if (submission) {
           isSubmitted = true;
@@ -156,7 +159,7 @@ const Dashboard = () => {
             .select('code_score, video_score')
             .eq('user_id', user.id)
             .eq('day_problem_id', problem.id)
-            .single();
+            .maybeSingle();
           
           if (score) {
             codeScore = score.code_score;
@@ -164,15 +167,8 @@ const Dashboard = () => {
           }
         }
 
-        // Check if challenge is active for today
-        const today = new Date();
-        const challengeDate = new Date(problem.challenge_date);
-        
-        const todayDateString = today.toISOString().split('T')[0];
-        const challengeDateString = challengeDate.toISOString().split('T')[0];
-        
-        // Check if it's today's date and is active
-        const isTodaysChallenge = todayDateString === challengeDateString && problem.is_active;
+        // Use the is_active flag from database (updated by updateActiveChallengeStatusInDb)
+        const isTodaysChallenge = problem.is_active;
         
         return {
           ...problem,
@@ -184,6 +180,33 @@ const Dashboard = () => {
       }));
       
       setChallenges(challengesWithStatus);
+    }
+  };
+
+  const updateActiveChallengeStatusInDb = async (userId: string) => {
+    try {
+      // Get all user's day problems
+      const { data: dayProblems } = await supabase
+        .from('day_problems')
+        .select('id, challenge_date')
+        .eq('user_id', userId);
+
+      if (!dayProblems) return;
+
+      const today = new Date().toISOString().split('T')[0];
+
+      // Update all problems to set is_active based on today's date
+      for (const problem of dayProblems) {
+        const challengeDateString = new Date(problem.challenge_date).toISOString().split('T')[0];
+        const shouldBeActive = challengeDateString === today;
+
+        await supabase
+          .from('day_problems')
+          .update({ is_active: shouldBeActive })
+          .eq('id', problem.id);
+      }
+    } catch (error) {
+      console.error('Error updating active challenge status:', error);
     }
   };
 

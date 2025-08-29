@@ -41,7 +41,7 @@ export const useProblemGeneration = () => {
           
           // Calculate challenge date (starting from tomorrow, one per day)
           const challengeDate = new Date();
-          challengeDate.setDate(challengeDate.getDate() + i + 1);
+          challengeDate.setDate(challengeDate.getDate() + i);
           
           const { error } = await supabase
             .from('day_problems')
@@ -51,7 +51,7 @@ export const useProblemGeneration = () => {
               problem_title: problemData.problem_title,
               problem_description: problemData.problem_description,
               challenge_date: challengeDate.toISOString().split('T')[0],
-              is_active: i === 0 // Only first problem is active initially
+              is_active: i === 0 // First problem (today) is active initially
             });
 
           if (error) {
